@@ -1,0 +1,887 @@
+
+<!DOCTYPE html>
+<html ng-app="syncedVideoApp">
+<head>
+    <title>Synced Video</title>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+          
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/angularjs-toaster/0.4.12/toaster.min.css" />
+    
+    <style>
+        h1, h2, h3, h4 {
+            color: #C49E73;
+        }
+    
+        h2 {
+            font-size: 20px;
+        }
+        
+        .bordered {
+            border: 3px solid #252323;
+        }
+        
+        hr {
+          border-top: 1px dashed #927878;
+        }
+        
+        a, a:hover {
+            color: #C49E73;
+        }
+        
+        th {
+            background-color: #2A2A2A;
+        }
+        
+        body {
+            font-size: 12px;
+            color: #D5B3E5;
+            background-color: #373737;
+        }
+        
+        .table-bordered {
+            border: 0px dashed #7A6482;
+        }
+        
+        .table-bordered>tbody>tr>td, .table-bordered>tbody>tr>th, .table-bordered>tfoot>tr>td, .table-bordered>tfoot>tr>th, .table-bordered>thead>tr>td, .table-bordered>thead>tr>th {
+            border: 0px;
+            border-bottom: 1px dashed #7A6482;
+        }
+
+        .form-control, .form-control[readonly] {
+            color: #fff;
+            background-color: #2A2A2A;
+            outline: none;
+            border: none !important;
+            -webkit-box-shadow: none !important;
+            box-shadow: none !important;
+            -webkit-transition: none !important;
+            -o-transition: none !important;
+        }
+        
+        .btn-default {
+            color: #333;
+            background-color: #8F8F8F;
+            border-color: #9D9D9D;
+        }
+        
+        .nav-tabs>li.active>a, .nav-tabs>li.active>a:focus, .nav-tabs>li.active>a:hover {
+            color: #ffffff;
+            cursor: default;
+            background-color: #373737;
+            border: 1px solid #ddd;
+            border-bottom-color: transparent;
+        }
+        
+        .nav>li>a:focus, .nav>li>a:hover {
+            text-decoration: none;
+            background-color: #373737;
+        }
+        
+        .nav-tabs>li>a {
+            border: 0px;
+        }
+    </style>
+    
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.14/angular.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.3.15/angular-animate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.12.1/ui-bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.12.1/ui-bootstrap-tpls.min.js"></script>
+    <script src="https://cdn.rawgit.com/Luegg/angularjs-scroll-glue/v2.0.4/src/scrollglue.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angularjs-toaster/0.4.12/toaster.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bower-angular-translate/2.7.1/angular-translate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-translate-storage-cookie/2.7.2/angular-translate-storage-cookie.min.js"></script>
+    <script src="https://cdn.socket.io/socket.io-1.3.5.js"></script>
+
+    <script>
+        angular.module('syncedVideoApp', [
+        'ui.bootstrap',
+        'luegg.directives',
+        'toaster',
+        'pascalprecht.translate']);
+        
+        angular.module('syncedVideoApp').config(['$translateProvider', function($translateProvider) {
+            $translateProvider.translations('en', {
+                'username connected': '{{username}} connected',
+                'username disconnected': '{{username}} disconnected',
+                'username cleared messages': '{{username}} cleared messages',
+                'username changed video': '{{username}} changed video',
+                'oldUsername is now newUsername': '{{oldUsername}} is now {{newUsername}}',
+            });
+            
+            $translateProvider.translations('es', {
+                'username connected': 'Se conectó {{username}}',
+                'username disconnected': 'Se desconectó {{username}}',
+                'username cleared messages': '{{username}} limpió los mensajes',
+                'username changed video': '{{username}} cambió el video',
+                'oldUsername is now newUsername': '{{oldUsername}} ahora es {{newUsername}}',
+                'Watch a video with your friends at the same time': 'Mira un video con tus amigos al mismo tiempo',
+                'The code is available at': 'El código está disponible en',
+                'Messages': 'Mensajes',
+                'Users': 'Usuarios',
+                'Change your name and color': 'Cambia tu nombre y color',
+                'Copy link and invite people': 'Copia el link e invita gente',
+                'Player': 'Reproductor',
+                'Change video': 'Cambiar video',
+                'Search': 'Buscar',
+                'Send': 'Enviar',
+                'Set': 'Aplicar',
+                'Clear messages': 'Limpiar mensajes',
+                'says': 'dice',
+                'typing...': 'escribiendo...',
+                'TO-DO': 'Por hacer',
+                'Type some keywords': 'Escribe qué buscar',
+                'Developed by': 'Desarrollado por',
+            });
+
+            $translateProvider.preferredLanguage('en');
+            //$translateProvider.useCookieStorage();
+        }]);
+                
+        angular.module('syncedVideoApp').directive('ngEnter', function () {
+            return function (scope, element, attrs) {
+                element.bind("keydown keypress", function (event) {
+                    if (event.which === 13) {
+                        scope.$apply(function (){
+                            scope.$eval(attrs.ngEnter);
+                        });
+
+                        event.preventDefault();
+                    }
+                });
+            };
+        });
+        
+        angular.module('syncedVideoApp').controller('mainController', ['$scope', '$http', '$window', 'toaster', '$interval', '$location', '$translate', function ($scope, $http, $window, toaster, $interval, $location, $translate) {
+
+            $scope.url = "";
+            $scope.socket = null;
+            $scope.currentUser = {};
+            $scope.logged = false;
+            $scope.newMessageBody = "";
+            $scope.lastPlayerInfo = {
+                videoURL: '',
+                time: 0,
+                state: -1
+            };
+            $scope.forms = {
+                newVideoURL: "",
+                searchQuery: ""
+            }
+            
+            $scope.users = [];
+            $scope.messages = [];
+            $scope.foundVideos = [];
+            $scope.serverInfo = {};
+            $scope.lastPlayerTime = 0;
+            
+            $scope.playerVars = {
+                autoplay: 0,
+                controls: 0,
+                disablekb: 0,
+                rel: 0
+            };
+            
+            var timeChecker;
+            
+            $scope.currentLanguage = $translate.use();
+            
+            $scope.setLanguage = function() {
+                $translate.use($scope.currentLanguage);
+            };
+
+            $scope.updateIsTyping = function (isTyping) {
+                $scope.updatingIsTyping = true;
+                
+                var httpRequest = $http({
+                    method: "get",
+                    url: "/api/users/updateIsTyping",
+                    params: {
+                        socketId: $scope.socket.id,
+                        isTyping: isTyping
+                    },
+                    data: {}
+                });
+                
+                httpRequest.success(function(response) {
+                
+                    if (response.error) {
+                        toaster.pop('error', "", response.message);
+                        return;
+                    }
+                });
+                
+                httpRequest['finally'](function() {
+                    $scope.updatingIsTyping = false;
+                });
+            };
+            
+            $scope.$watch('newMessageBody', function(newValue, oldValue) {                        
+                if (oldValue.length == 0 && newValue.length > 0) {
+                    $scope.updateIsTyping(true);
+                } else if (oldValue.length > 0 && newValue.length == 0) {
+                    $scope.updateIsTyping(false);
+                }
+            }, true);
+            
+            $scope.submitMessage = function () {
+                if ($scope.newMessageBody == '') {
+                    return;
+                }
+            
+                $scope.sendingMessage = true;
+                
+                var httpRequest = $http({
+                    method: "get",
+                    url: "/api/messages/submit",
+                    params: {
+                        socketId: $scope.socket.id,
+                        body: $scope.newMessageBody                       
+                    },
+                    data: {
+                    }
+                });
+                
+                httpRequest.success(function(response) {
+                
+                    if (response.error) {
+                        toaster.pop('error', "", response.message);
+                        return;
+                    }
+                    
+                    $scope.newMessageBody = "";
+                });
+                
+                httpRequest['finally'](function() {
+                    $scope.sendingMessage = false;
+                });
+            };
+            
+            $scope.connect = function () {
+                $scope.socket = io.connect({ query: "roomId=" + $location.search().roomId });
+                
+                $scope.socket.on('connect', function() {
+                    $scope.logged = true;
+                                                          
+                    $scope.socket.on("welcome", function(data) {
+                        $location.search('roomId', data.roomId);
+                        $scope.url = $location.absUrl();
+                        
+                        $scope.fetchUsers();
+                        $scope.fetchMessages();
+                        $scope.fetchPlayerInfo();
+                    
+                        $scope.currentUser = data.user;
+                        $scope.$apply()
+                    });
+                    
+                    $scope.socket.on("userBroadcastsMessage", function(message) {
+                        $scope.messages.push(message);
+                        $scope.$apply()
+                    });
+                    
+                    $scope.socket.on("userClearedMessages", function(data) {                   
+                        $scope.messages.length = 0;
+                        $scope.messages.push(data.message);
+                        
+                        $scope.$apply()
+                    });
+                    
+                    $scope.socket.on("userConnected", function(data) {
+                        $scope.messages.push(data.message);
+                        
+						$scope.fetchPlayerInfo();
+                        $scope.fetchUsers();
+                        $scope.$apply()
+                    });
+                    
+                    $scope.socket.on("userChangedName", function(data) {
+                        $scope.messages.push(data.message);
+                        
+                        $scope.fetchUsers();
+                        $scope.$apply()
+                    });
+					
+                    $scope.socket.on("userChangedColor", function(data) {
+                        $scope.messages.push(data.message);
+                        
+                        $scope.fetchUsers();
+                        $scope.$apply()
+                    });
+                    
+                    $scope.socket.on("userUpdatedIsTyping", function(data) {
+                        $scope.fetchUsers();
+                        $scope.$apply()
+                    });
+                    
+                    $scope.socket.on("userDisconnected", function(data) {
+                        $scope.messages.push(data.message);
+                        
+                        $scope.fetchUsers();
+                        $scope.$apply()
+                    });
+                    
+                    $scope.socket.on("userChangedVideo", function(data) {
+                        $scope.messages.push(data.message);
+
+                        angular.extend($scope.lastPlayerInfo, data.player);
+                        $scope.$apply()
+                    });
+                    
+                    $scope.socket.on("userChangedPlayerState", function(data) {
+						$scope.fetchUsers();
+                        $scope.$apply()
+                    });
+                    
+                    $scope.socket.on("userSentCommand", function(data) {
+                        $scope.messages.push(data.message);
+                       
+                        angular.extend($scope.lastPlayerInfo, data.player);
+                       
+						var videoNode = document.querySelector('video');
+                        videoNode.currentTime = data.player.time;
+
+                        switch (data.player.state) {
+                            case 1: videoNode.play(); break;
+                            case 2: videoNode.pause(); break;
+                        }
+
+                        $scope.$apply()
+                    });
+                });
+                
+                $scope.socket.on('connect_error', function() {
+                });
+            };
+            
+            $scope.fetchUsers = function () {
+                $scope.fetchingUsers = true;
+                
+                var httpRequest = $http({
+                    method: "get",
+                    url: "/api/users/list",
+                    params: {
+                        socketId: $scope.socket.id,
+                    },
+                    data: {
+                    }
+                });
+                
+                httpRequest.success(function(response) {
+                
+                    if (response.error) {
+                        toaster.pop('error', "", response.message);
+                        return;
+                    }
+                    
+                    $scope.users = response.users;
+                });
+                
+                httpRequest['finally'](function() {
+                    $scope.fetchingUsers = false;
+                });
+            };
+            
+            $scope.fetchMessages = function () {
+                $scope.fetchingMessages = true;
+                
+                var httpRequest = $http({
+                    method: "get",
+                    url: "/api/messages/list",
+                    params: {
+                        socketId: $scope.socket.id
+                    },
+                    data: {
+                    }
+                });
+                
+                httpRequest.success(function(response) {
+                
+                    if (response.error) {
+                        toaster.pop('error', "", response.message);
+                        return;
+                    }
+                    
+                    $scope.messages = response.messages;
+                });
+                
+                httpRequest['finally'](function() {
+                    $scope.fetchingMessages = false;
+                });
+            };
+            
+            $scope.clearMessages = function () {
+                $scope.clearingMessages = true;
+                
+                var httpRequest = $http({
+                    method: "get",
+                    url: "/api/messages/clear",
+                    params: {
+                        socketId: $scope.socket.id
+                    },
+                    data: {
+                    }
+                });
+                
+                httpRequest.success(function(response) {
+                
+                    if (response.error) {
+                        toaster.pop('error', "", response.message);
+                        return;
+                    }
+                });
+                
+                httpRequest['finally'](function() {
+                    $scope.clearingMessages = false;
+                });
+            };
+            
+            $scope.changeName = function () {
+                $scope.changingName = true;
+                
+                var httpRequest = $http({
+                    method: "get",
+                    url: "/api/users/changeName",
+                    params: {
+                        socketId: $scope.socket.id,
+                        username: $scope.currentUser.newUsername
+                    },
+                    data: {
+                    }
+                });
+                
+                httpRequest.success(function(response) {
+                
+                    if (response.error) {
+                        toaster.pop('error', "", response.message);
+                        return;
+                    }
+                    
+                    $scope.currentUser.username = $scope.currentUser.newUsername;
+                    $scope.currentUser.newUsername = "";
+                });
+                
+                httpRequest['finally'](function() {
+                    $scope.changingName = false;
+                });
+            };
+			
+            $scope.changeColor = function () {
+                $scope.changingColor = true;
+                
+                var httpRequest = $http({
+                    method: "get",
+                    url: "/api/users/changeColor",
+                    params: {
+                        socketId: $scope.socket.id,
+                        color: $scope.currentUser.color
+                    },
+                    data: {
+                    }
+                });
+                
+                httpRequest.success(function(response) {
+                
+                    if (response.error) {
+                        toaster.pop('error', "", response.message);
+                        return;
+                    }
+                    
+                    $scope.currentUser.color = $scope.currentUser.color;
+                });
+                
+                httpRequest['finally'](function() {
+                    $scope.changingColor = false;
+                });
+            };
+			
+            $scope.changeVideoFile = function () {
+                $scope.changingVideo = true;
+                
+                var httpRequest = $http({
+                    method: "get",
+                    url: "/api/users/changeVideo",
+                    params: {
+                        socketId: $scope.socket.id,
+                        videoFileName: $scope.currentUser.videoFileName,
+						videoFileSize: $scope.currentUser.videoFileSize
+                    },
+                    data: {
+                    }
+                });
+                
+                httpRequest.success(function(response) {
+                
+                    if (response.error) {
+                        toaster.pop('error', "", response.message);
+                        return;
+                    }
+                });
+                
+                httpRequest['finally'](function() {
+                    $scope.changingVideo = false;
+                });
+            };
+			
+			$scope.videoFileChanged = function(e) {
+			
+				var file = e.files[0];
+				var type = file.type;
+				var videoNode = document.querySelector('video');
+				var canPlay = videoNode.canPlayType(type);
+				if (canPlay === '') canPlay = 'no';
+				var isError = canPlay === 'no';
+
+				if (isError) {
+					alert("Cant play");
+					return;
+				}
+
+				var fileURL = URL.createObjectURL(file);
+				videoNode.src = fileURL;
+				
+				$scope.currentUser.videoFileName = file.name;
+				$scope.currentUser.videoFileSize = file.size;
+
+				$scope.changeVideoFile();
+			};
+			
+			$scope.subtitleTrackId = 0;
+			
+			$scope.parseTimestamp = function(s) {
+				var match = s.match(/^(?:([0-9]+):)?([0-5][0-9]):([0-5][0-9](?:[.,][0-9]{0,3})?)/);
+				if (match == null) {
+					throw 'Invalid timestamp format: ' + s;
+				}
+				var hours = parseInt(match[1] || "0", 10);
+				var minutes = parseInt(match[2], 10);
+				var seconds = parseFloat(match[3].replace(',', '.'));
+				return seconds + 60 * minutes + 60 * 60 * hours;
+			};
+			
+			$scope.subtitleFileChanged = function(e) {
+				var fileReader = new FileReader(); 
+				fileReader.onload = function(){ 
+
+					var video = document.querySelector('video');
+					
+					$scope.subtitleTrackId++;
+					var track = video.addTextTrack('subtitles', "English " + $scope.subtitleTrackId, "en");
+					track.mode = "showing";
+
+					var cues = [];
+					
+					var lines = fileReader.result.split("\r\n\r\n");
+					
+					for (var i = 0; i < lines.length; i++) {
+						
+						var line = lines[i].split("\r\n");
+						
+						if (line.length < 3) 
+							continue;
+						
+						var time = line[1].split(" --> ");
+						
+						var start = $scope.parseTimestamp(time[0]);
+						var end = $scope.parseTimestamp(time[1]);
+						var text = line.slice(2, line.length).join("\n");
+						
+						var cue = new VTTCue(start, end, text);
+						cues.push(cue);
+					}
+					
+					for (var i = 0; i < cues.length; i++) {
+						track.addCue(cues[i]);
+					}
+				} 
+				  
+				fileReader.readAsText(e.files[0]); 
+			};
+
+            $scope.fetchPlayerInfo = function () {
+                $scope.fetchingPlayerInfo = true;
+                
+                var httpRequest = $http({
+                    method: "get",
+                    url: "/api/player/info",
+                    params: {
+                        socketId: $scope.socket.id
+                    },
+                    data: {}
+                });
+                
+                httpRequest.success(function(response) {
+                
+                    if (response.error) {
+                        toaster.pop('error', "", response.message);
+                        return;
+                    }
+
+                    angular.extend($scope.lastPlayerInfo, response.player);
+					
+					if (response.player.state == 2) {
+						var videoNode = document.querySelector('video');
+						videoNode.pause();
+					}
+                });
+                
+                httpRequest['finally'](function() {
+                    $scope.fetchingPlayerInfo = false;
+                });
+            };
+            
+            $scope.submitPlayerState = function () {
+                $scope.sendingPlayerState = true;
+                
+                var httpRequest = $http({
+                    method: "get",
+                    url: "/api/player/submitState",
+                    params: {
+                        socketId: $scope.socket.id,
+                        time: $scope.player.getCurrentTime(),
+                        state: $scope.player.getPlayerState()
+                    },
+                    data: {}
+                });
+                
+                httpRequest.success(function(response) {
+                
+                    if (response.error) {
+                        toaster.pop('error', "", response.message);
+                        return;
+                    }
+                });
+                
+                httpRequest['finally'](function() {
+                    $scope.sendingPlayerState = false;
+                });
+            };
+            
+            $scope.$on('youtube.player.buffering', function ($event, player) {
+                //$scope.submitPlayerState();
+            });
+            
+            $scope.$on('youtube.player.paused', function ($event, player) {
+                $scope.submitPlayerState();
+            });
+            
+            $scope.$on('youtube.player.playing', function ($event, player) {
+                $scope.submitPlayerState();
+            });
+            
+            $scope.$on('youtube.player.ready', function ($event, player) {
+                
+                // Watch for time jumps
+                /*timeChecker = $interval(function() {
+                    if (Math.abs($scope.player.getCurrentTime() - $scope.lastPlayerTime) > 2) {
+                        console.log("detected a time jump");
+                        $scope.submitPlayerState()
+                    }
+                    
+                    $scope.lastPlayerTime = $scope.player.getCurrentTime();
+                }, 500);*/
+                
+                // Use last player info
+                console.log($scope.lastPlayerInfo);
+                $scope.player.seekTo($scope.lastPlayerInfo.time);
+                
+                if ($scope.lastPlayerInfo.state == 1) {
+                    $scope.player.playVideo();
+                } else if ($scope.lastPlayerInfo.state == 2) {
+                    $scope.player.pauseVideo();
+                }
+            });
+            
+            $scope.submitCommand = function(state, offset) {
+				var videoNode = document.querySelector('video');
+                $scope.sendingCommand = true;
+                
+                var httpRequest = $http({
+                    method: "get",
+                    url: "/api/player/submitCommand",
+                    params: {
+                        socketId: $scope.socket.id,
+                        time: videoNode.currentTime + offset,
+                        state: state
+                    },
+                    data: {}
+                });
+                
+                httpRequest.success(function(response) {
+                
+                    if (response.error) {
+                        toaster.pop('error', "", response.message);
+                        return;
+                    }
+                });
+                
+                httpRequest['finally'](function() {
+                    $scope.sendingCommand = false;
+                });
+            };           
+            
+            $scope.connect();
+        }]);
+    </script>
+</head>
+
+<body>
+    <div class="container-fluid" ng-controller="mainController">
+		<div class="row">
+			<div class="col-md-6">
+                <h1>Synced video player</h1>
+                <p>
+                    {{ 'Watch a video with your friends at the same time' | translate }}.<br />
+                    {{ 'The code is available at' | translate }} <a href="https://github.com/germanger/synced-video" target="_blank">GitHub</a>
+                </p>
+                <form class="form-inline">
+                    <select class="form-control" ng-model="currentLanguage" ng-change="setLanguage()">
+                        <option value="es">Español</option>
+                        <option value="en">English</option>
+                    </select>
+                </form>
+			</div>
+			<div class="col-md-6">
+                <h2>{{ 'Change your name and color' | translate }}</h2>
+                <form class="form-inline" style="margin-top: 15px" ng-show="logged">
+                    <div class="form-group">
+                        <input type="text" class="form-control input-sm" ng-model="currentUser.newUsername" placeholder="{{ currentUser.username }}" />
+                    </div>
+                    <div class="form-group">
+                        <button class="btn btn-default btn-sm" ng-click="changeName()" ng-disabled="username == '' || changingName">{{ 'Set' | translate }}</button>
+                    </div>
+                    <div class="form-group">
+                        <input type="color" class="form-control input-sm" ng-model="currentUser.color" style="width: 50px" ng-change="changeColor()" />
+                    </div>
+                </form>
+                
+                <h2>{{ 'Copy link and invite people' | translate }}</h2>
+                <form style="margin-top: 15px" ng-show="logged">
+                    <div class="form-group">
+                        <input type="text" class="form-control input-sm" ng-model="url" ng-readonly="true" />
+                    </div>
+                </form>
+			</div>
+		</div>
+        <div class="row">
+            <div class="col-md-4">
+                <h2>{{ 'Messages' | translate }} ({{messages.length}})</h2>
+                <div class="bordered" style="height: 200px; overflow-y: scroll" scroll-glue>
+                    <table class="table table-bordered table-condensed">
+                        <tr ng-repeat="message in messages">
+                            <td>
+                                <div ng-switch="message.messageType">
+                                    <div ng-switch-when="userBroadcastsMessage" style="color: {{ message.user.color }}">
+                                        <strong>{{message.user.username || message.user.userId}}</strong> {{ 'says' | translate }}:<br />
+                                        <p>{{message.chatMessage.body}}</p>
+                                    </div>
+                                    <div ng-switch-when="userConnected">
+                                        <strong style="color: #FFAF99">{{ 'username connected' | translate:{ username: message.user.username } }}</strong>
+                                    </div>
+                                    <div ng-switch-when="userDisconnected">
+                                        <strong style="color: #FFAF99">{{ 'username disconnected' | translate:{ username: message.user.username } }}</strong>
+                                    </div>
+                                    <div ng-switch-when="userChangedName">
+                                        <strong style="color: #FFAF99">{{ 'oldUsername is now newUsername' | translate:{ oldUsername: message.data.oldUsername, newUsername: message.data.newUsername } }}</strong>
+                                    </div>
+                                    <div ng-switch-when="userChangedColor">
+                                        <strong style="color: #FFAF99">{{ message.user.username }} changed their color</strong>
+                                    </div>
+                                    <div ng-switch-when="userChangedVideo">
+                                        <strong style="color: #FFAF99">{{ 'username changed video' | translate:{ username: message.user.username } }}</strong>
+                                    </div>
+                                    <!--<div ng-switch-when="userChangedPlayerState">
+                                        <strong style="color: #FFAF99">{{message.user.username}}'s player new state: {{message.user.playerState == 2 ? "Paused" : message.user.playerState == 1 ? "Playing" : "" }}</strong>
+                                    </div>-->
+                                    <div ng-switch-when="userSentCommand">
+                                        <strong style="color: #FFAF99" ng-if="message.player.state == 1">{{message.user.username}} clicked play, at: {{message.player.time | number: 2}} seconds</strong>
+										<strong style="color: #FFAF99" ng-if="message.player.state == 2">{{message.user.username}} clicked pause, at: {{message.player.time | number: 2}} seconds</strong>
+                                    </div>
+                                    <div ng-switch-when="userClearedMessages">
+                                        <strong style="color: #FFAF99">{{ 'username cleared messages' | translate:{ username: message.user.username } }}</strong>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <form style="margin-top: 15px" ng-show="logged">
+                    <div class="form-group">
+                        <textarea style="resize: vertical;" rows="3" class="form-control bordered" ng-model="newMessageBody" ng-enter="submitMessage()" placeholder="Write something..."></textarea>
+                    </div>
+                </form>
+                <form class="form-inline" ng-show="logged">
+                    <div class="form-group">
+                        <button class="btn btn-default btn-sm" ng-click="submitMessage()" ng-disabled="sendingMessage">{{ 'Send' | translate }}</button>
+                    </div>
+                    <div class="form-group">
+                        <button class="btn btn-default btn-sm" ng-click="clearMessages()" ng-disabled="clearingMessages">{{ 'Clear messages' | translate }}</button>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-8">                
+                <h2>{{ 'Player' | translate }}</h2>
+				<video style="border: 1px solid black; width: 100%">
+					<source src="" type="video/mp4">
+				</video>
+
+                <form class="form-inline" style="text-align: center; margin-top: 15px" ng-show="logged">
+                    <div class="form-group">
+                        <button class="btn btn-default btn-sm" ng-click="submitCommand(1, 0)" ng-disabled="sendingCommand" ng-hide="playerInfo.state == 1"><span class="glyphicon glyphicon-play" /></button>
+                    </div>
+                    <div class="form-group">
+                        <button class="btn btn-default btn-sm" ng-click="submitCommand(2, 0)" ng-disabled="sendingCommand" ng-hide="playerInfo.state == 2"><span class="glyphicon glyphicon-pause" /></button>
+                    </div>
+                    <div class="form-group">
+                        <button class="btn btn-default btn-sm" ng-click="submitCommand(1, -5)" ng-disabled="sendingCommand"><span class="glyphicon glyphicon-backward" /> 3 secs</button>
+                    </div>
+                    <div class="form-group">
+                        <button class="btn btn-default btn-sm" ng-click="submitCommand(1, 5)" ng-disabled="sendingCommand"><span class="glyphicon glyphicon-forward" /> 3 secs</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="row">
+			<div class="col-md-8">
+                <h2 style="margin-top: 30px">{{ 'Users' | translate }} ({{users.length}})</h2>
+                <div class="bordered" style="height: 200px; overflow-y: scroll">
+                    <table class="table table-bordered table-condensed">
+                        <tr>
+                            <th>username</th>
+							<th>video file</th>
+							<th>size</th>
+                            <th>player state</th>
+                            <th style="width: 70px">chat</th>
+                        </tr>
+                        <tr ng-repeat="user in users" style="color: {{ user.color }}">
+                            <td>{{user.username}}</td>
+							<td>{{user.videoFileName}}</td>
+							<td>{{(user.videoFileSize/1024/1024/1024) | number: 2}} GB</td>
+                            <td>{{user.playerState == 2 ? "Paused" : user.playerState == 1 ? "Playing" : "" }}</td>
+                            <td><span ng-show="user.isTyping">{{ 'typing...' | translate }}</span></td>
+                        </tr>
+                    </table>
+                </div>
+			</div>
+			<div class="col-md-4">
+                <h2 style="margin-top: 30px">{{ 'Change video' | translate }}</h2>
+				<div class="form-group">
+					<label>Video</label>
+					<input type="file" class="form-control input-sm" accept="video/*" onchange="angular.element(this).scope().videoFileChanged(this)">
+				</div>
+				<div class="form-group">
+					<label>Subtitles</label>
+					<input type="file" class="form-control input-sm" accept=".srt" onchange="angular.element(this).scope().subtitleFileChanged(this)">
+				</div>
+			</div>
+		</div>
+
+        <hr />
+        <p style="text-align: center;">{{ 'Developed by' | translate }} <a href="http://www.manger.cl" targer="_blank">manger.cl</a></p>
+        
+        <toaster-container toaster-options="{'time-out': 3000, 'close-button': true, 'position-class': 'toast-bottom-right'}"></toaster-container>
+    </div>
+
+</body>
+</html>
