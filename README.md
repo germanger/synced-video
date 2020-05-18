@@ -1,4 +1,4 @@
-# synced-youtube
+# synced-video
 A synced multiuser video player
 
 ## Demo
@@ -40,12 +40,10 @@ The following scripts are referenced directly in public/index.html
 - Angularjs 1.3.14
 - Angular's Boostrap UI 0.12.1
 - Bootstrap CSS 3.3.4
-- HTML 5 (canvas)
+- HTML 5 (video)
 - socket.io 1.3.5
 - toaster (notifications) 0.4.12
 - scrollglue (scroll to bottom of divs)
-- Youtube player API ("iframe_api")
-- angular-youtube-embed (angular directive for iframe_api)
 
 ## TO-DOs
 
