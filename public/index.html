@@ -158,6 +158,9 @@
             $scope.url = "";
             $scope.socket = null;
             $scope.currentUser = {};
+			$scope.slider = 0;
+			$scope.currentTime = 0;
+			$scope.duration = 0;
             $scope.logged = false;
             $scope.newMessageBody = "";
             $scope.lastPlayerInfo = {
@@ -172,18 +175,7 @@
             
             $scope.users = [];
             $scope.messages = [];
-            $scope.foundVideos = [];
             $scope.serverInfo = {};
-            $scope.lastPlayerTime = 0;
-            
-            $scope.playerVars = {
-                autoplay: 0,
-                controls: 0,
-                disablekb: 0,
-                rel: 0
-            };
-            
-            var timeChecker;
             
             $scope.currentLanguage = $translate.use();
             
@@ -663,41 +655,6 @@
                 });
             };
             
-            $scope.$on('youtube.player.buffering', function ($event, player) {
-                //$scope.submitPlayerState();
-            });
-            
-            $scope.$on('youtube.player.paused', function ($event, player) {
-                $scope.submitPlayerState();
-            });
-            
-            $scope.$on('youtube.player.playing', function ($event, player) {
-                $scope.submitPlayerState();
-            });
-            
-            $scope.$on('youtube.player.ready', function ($event, player) {
-                
-                // Watch for time jumps
-                /*timeChecker = $interval(function() {
-                    if (Math.abs($scope.player.getCurrentTime() - $scope.lastPlayerTime) > 2) {
-                        console.log("detected a time jump");
-                        $scope.submitPlayerState()
-                    }
-                    
-                    $scope.lastPlayerTime = $scope.player.getCurrentTime();
-                }, 500);*/
-                
-                // Use last player info
-                console.log($scope.lastPlayerInfo);
-                $scope.player.seekTo($scope.lastPlayerInfo.time);
-                
-                if ($scope.lastPlayerInfo.state == 1) {
-                    $scope.player.playVideo();
-                } else if ($scope.lastPlayerInfo.state == 2) {
-                    $scope.player.pauseVideo();
-                }
-            });
-            
             $scope.submitCommand = function(state, offset) {
 				var videoNode = document.querySelector('video');
                 $scope.sendingCommand = true;
@@ -724,7 +681,14 @@
                 httpRequest['finally'](function() {
                     $scope.sendingCommand = false;
                 });
-            };           
+            };
+
+			var videoNode = document.querySelector('video');
+			videoNode.ontimeupdate = (event) => {
+				$scope.slider = videoNode.duration ? (videoNode.currentTime / videoNode.duration) * 500 : 0;
+				$scope.currentTime = videoNode.currentTime;
+				$scope.$apply();
+			};
             
             $scope.connect();
         }]);
@@ -827,11 +791,14 @@
             </div>
             <div class="col-md-8">                
                 <h2>{{ 'Player' | translate }}</h2>
-				<video style="border: 1px solid black; width: 100%">
+				<video style="border: 1px solid black; width: 100%" >
 					<source src="" type="video/mp4">
 				</video>
+				
+				<input id="slider" ng-model="slider" type="range" min="0" max="500" step="0.001" />
 
                 <form class="form-inline" style="text-align: center; margin-top: 15px" ng-show="logged">
+					<span>{{ currentTime/60 | number: 2 }} min</span>
                     <div class="form-group">
                         <button class="btn btn-default btn-sm" ng-click="submitCommand(1, 0)" ng-disabled="sendingCommand" ng-hide="playerInfo.state == 1"><span class="glyphicon glyphicon-play" /></button>
                     </div>
@@ -844,6 +811,7 @@
                     <div class="form-group">
                         <button class="btn btn-default btn-sm" ng-click="submitCommand(1, 5)" ng-disabled="sendingCommand"><span class="glyphicon glyphicon-forward" /> 3 secs</button>
                     </div>
+					<span>{{ currentUser.videoDuration/60 | number: 2 }} min</span>
                 </form>
             </div>
         </div>
