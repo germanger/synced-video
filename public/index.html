@@ -505,7 +505,8 @@
                     params: {
                         socketId: $scope.socket.id,
                         videoFileName: $scope.currentUser.videoFileName,
-						videoFileSize: $scope.currentUser.videoFileSize
+						videoFileSize: $scope.currentUser.videoFileSize,
+						videoDuration: $scope.currentUser.videoDuration,
                     },
                     data: {
                     }
@@ -541,10 +542,14 @@
 				var fileURL = URL.createObjectURL(file);
 				videoNode.src = fileURL;
 				
-				$scope.currentUser.videoFileName = file.name;
-				$scope.currentUser.videoFileSize = file.size;
+				videoNode.onloadedmetadata = function() {
+					$scope.currentUser.videoFileName = file.name;
+					$scope.currentUser.videoFileSize = file.size;
+					$scope.currentUser.videoDuration = videoNode.duration;
 
-				$scope.changeVideoFile();
+					$scope.changeVideoFile();
+				};
+
 			};
 			
 			$scope.subtitleTrackId = 0;
@@ -851,14 +856,16 @@
                             <th>username</th>
 							<th>video file</th>
 							<th>size</th>
-                            <th>player state</th>
+							<th>duration</th>
+                            <!--<th>player state</th>-->
                             <th style="width: 70px">chat</th>
                         </tr>
                         <tr ng-repeat="user in users" style="color: {{ user.color }}">
                             <td>{{user.username}}</td>
 							<td>{{user.videoFileName}}</td>
 							<td>{{(user.videoFileSize/1024/1024/1024) | number: 2}} GB</td>
-                            <td>{{user.playerState == 2 ? "Paused" : user.playerState == 1 ? "Playing" : "" }}</td>
+							<td>{{(user.videoDuration/60) | number: 1}} min</td>
+                            <!--<td>{{user.playerState == 2 ? "Paused" : user.playerState == 1 ? "Playing" : "" }}</td>-->
                             <td><span ng-show="user.isTyping">{{ 'typing...' | translate }}</span></td>
                         </tr>
                     </table>

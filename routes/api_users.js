@@ -118,6 +118,7 @@ router.get('/changeVideo', function(req, res, next) {
     
     res.user.videoFileName = req.query.videoFileName;
 	res.user.videoFileSize = req.query.videoFileSize;
+	res.user.videoDuration = req.query.videoDuration;
     
     // Log
     var message = {
@@ -128,7 +129,6 @@ router.get('/changeVideo', function(req, res, next) {
             username: res.user.username
         },
         data: {
-            color: res.user.color
         }
     };
     
@@ -179,6 +179,7 @@ router.get('/list', function(req, res, next) {
 						username: user.username,
 						videoFileName: user.videoFileName,
 						videoFileSize: user.videoFileSize,
+						videoDuration: user.videoDuration,
 						color: user.color,
 						playerState: user.playerState,
 						isTyping: user.isTyping

@@ -53,7 +53,8 @@ shared.io.sockets.on('connection', function (socket) {
         username: userId,
 		color: "#" + randomColor,
 		videoFileName: "",
-		videoFileSize: 0
+		videoFileSize: 0,
+		videoDuration: 0
     };
 
     shared.users[socket.id] = user;
