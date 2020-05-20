@@ -158,8 +158,9 @@
             $scope.url = "";
             $scope.socket = null;
             $scope.currentUser = {};
-			$scope.slider = 0;
+			$scope.timelineValue = 0;
 			$scope.currentTime = 0;
+			$scope.draggingTimeline = false;
 			$scope.duration = 0;
             $scope.logged = false;
             $scope.newMessageBody = "";
@@ -546,10 +547,10 @@
 			
 			$scope.subtitleTrackId = 0;
 			
-			$scope.parseTimestamp = function(s) {
+			$scope.parseTimestamp = function(lineNum, s) {
 				var match = s.match(/^(?:([0-9]+):)?([0-5][0-9]):([0-5][0-9](?:[.,][0-9]{0,3})?)/);
 				if (match == null) {
-					throw 'Invalid timestamp format: ' + s;
+					throw 'Invalid timestamp format: ' + s + " (line " + lineNum + ")";
 				}
 				var hours = parseInt(match[1] || "0", 10);
 				var minutes = parseInt(match[2], 10);
@@ -569,19 +570,23 @@
 
 					var cues = [];
 					
-					var lines = fileReader.result.split("\r\n\r\n");
+					var text = fileReader.result.replace(/\r/g, "");
+					
+					var lines = text.split("\n\n");
 					
 					for (var i = 0; i < lines.length; i++) {
+					
+						console.log("Linea: " + lines[i]);
 						
-						var line = lines[i].split("\r\n");
+						var line = lines[i].split("\n");
 						
 						if (line.length < 3) 
 							continue;
 						
 						var time = line[1].split(" --> ");
 						
-						var start = $scope.parseTimestamp(time[0]);
-						var end = $scope.parseTimestamp(time[1]);
+						var start = $scope.parseTimestamp(i, time[0]);
+						var end = $scope.parseTimestamp(i, time[1]);
 						var text = line.slice(2, line.length).join("\n");
 						
 						var cue = new VTTCue(start, end, text);
@@ -593,7 +598,7 @@
 					}
 				} 
 				  
-				fileReader.readAsText(e.files[0]); 
+				fileReader.readAsText(e.files[0], "ISO-8859-4");
 			};
 
             $scope.fetchPlayerInfo = function () {
@@ -655,7 +660,7 @@
                 });
             };
             
-            $scope.submitCommand = function(state, offset) {
+            $scope.submitCommand = function(state, time) {
 				var videoNode = document.querySelector('video');
                 $scope.sendingCommand = true;
                 
@@ -664,7 +669,7 @@
                     url: "/api/player/submitCommand",
                     params: {
                         socketId: $scope.socket.id,
-                        time: videoNode.currentTime + offset,
+                        time: time,
                         state: state
                     },
                     data: {}
@@ -684,11 +689,31 @@
             };
 
 			var videoNode = document.querySelector('video');
+			var timelineNode = document.querySelector('#timeline');
+			
 			videoNode.ontimeupdate = (event) => {
-				$scope.slider = videoNode.duration ? (videoNode.currentTime / videoNode.duration) * 500 : 0;
-				$scope.currentTime = videoNode.currentTime;
+				if (!$scope.draggingTimeline) {
+					$scope.timelineValue = videoNode.duration ? (videoNode.currentTime / videoNode.duration) * 500 : 0;
+					$scope.currentTime = videoNode.currentTime;
+					$scope.$apply();
+				}
+			};
+			
+			timelineNode.oninput = (event) => {
+				$scope.draggingTimeline = true;
 				$scope.$apply();
 			};
+			
+			timelineNode.onchange = (event) => {				
+				var time = videoNode.duration * timelineNode.value/500;
+
+				$scope.submitCommand($scope.lastPlayerInfo.state, time);
+				
+				$scope.draggingTimeline = false;
+				$scope.$apply();
+			};
+			
+
             
             $scope.connect();
         }]);
@@ -791,25 +816,25 @@
             </div>
             <div class="col-md-8">                
                 <h2>{{ 'Player' | translate }}</h2>
-				<video style="border: 1px solid black; width: 100%" >
+				<video style="border: 1px solid black; width: 100%">
 					<source src="" type="video/mp4">
 				</video>
 				
-				<input id="slider" ng-model="slider" type="range" min="0" max="500" step="0.001" />
+				<input id="timeline" ng-model="timelineValue" type="range" min="0" max="500" step="0.001" />
 
                 <form class="form-inline" style="text-align: center; margin-top: 15px" ng-show="logged">
 					<span>{{ currentTime/60 | number: 2 }} min</span>
                     <div class="form-group">
-                        <button class="btn btn-default btn-sm" ng-click="submitCommand(1, 0)" ng-disabled="sendingCommand" ng-hide="playerInfo.state == 1"><span class="glyphicon glyphicon-play" /></button>
+                        <button class="btn btn-default btn-sm" ng-click="submitCommand(1, currentTime - 10)" ng-disabled="sendingCommand"><span class="glyphicon glyphicon-backward" /> 10s</button>
                     </div>
                     <div class="form-group">
-                        <button class="btn btn-default btn-sm" ng-click="submitCommand(2, 0)" ng-disabled="sendingCommand" ng-hide="playerInfo.state == 2"><span class="glyphicon glyphicon-pause" /></button>
+                        <button class="btn btn-default btn-sm" ng-click="submitCommand(1, currentTime)" ng-disabled="sendingCommand" ng-hide="playerInfo.state == 1"><span class="glyphicon glyphicon-play" /></button>
                     </div>
                     <div class="form-group">
-                        <button class="btn btn-default btn-sm" ng-click="submitCommand(1, -5)" ng-disabled="sendingCommand"><span class="glyphicon glyphicon-backward" /> 3 secs</button>
+                        <button class="btn btn-default btn-sm" ng-click="submitCommand(2, currentTime)" ng-disabled="sendingCommand" ng-hide="playerInfo.state == 2"><span class="glyphicon glyphicon-pause" /></button>
                     </div>
                     <div class="form-group">
-                        <button class="btn btn-default btn-sm" ng-click="submitCommand(1, 5)" ng-disabled="sendingCommand"><span class="glyphicon glyphicon-forward" /> 3 secs</button>
+                        <button class="btn btn-default btn-sm" ng-click="submitCommand(1, currentTime + 10)" ng-disabled="sendingCommand"><span class="glyphicon glyphicon-forward" /> 10s</button>
                     </div>
 					<span>{{ currentUser.videoDuration/60 | number: 2 }} min</span>
                 </form>

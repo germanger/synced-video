@@ -30,7 +30,7 @@ The master branch is directly deployed to heroku: https://synced-video.herokuapp
 - `'/api/messages/clear'` : Expects a `socketId`. Clears all messages.
 - `'/api/player/info'` : Expects a `socketId`. Gets the current room player info (current video, time and state)
 - `'/api/player/submitState'` : Expects a `socketId` and a `state`
-- `'/api/player/submitCommand'` : Expects a `socketId`, a `state`, and a `time`
+- `'/api/player/submitCommand'` : Expects a `socketId`, a `state` (play, pause), and a `time` (in seconds)
 - `'/api/server/info'` : Returns info about the server (eg. port)
 
 ## Client side
