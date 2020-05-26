@@ -6,7 +6,7 @@ The master branch is directly deployed to heroku: https://synced-video.herokuapp
 
 ## Installation
 
-1. Run `npm-install`
+1. Run `npm install`
 2. Run `node app.js`
 3. Go to http://localhost:3000
 

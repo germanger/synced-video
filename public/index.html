@@ -162,6 +162,9 @@
 			$scope.currentTime = 0;
 			$scope.draggingTimeline = false;
 			$scope.duration = 0;
+            $scope.subtitlesFontSize = "20px";
+            $scope.subtitlesTextColor = "white";
+            $scope.subtitlesBackgroundColor = "transparent";
             $scope.logged = false;
             $scope.newMessageBody = "";
             $scope.lastPlayerInfo = {
@@ -169,10 +172,6 @@
                 time: 0,
                 state: -1
             };
-            $scope.forms = {
-                newVideoURL: "",
-                searchQuery: ""
-            }
             
             $scope.users = [];
             $scope.messages = [];
@@ -598,7 +597,7 @@
 					}
 				} 
 				  
-				fileReader.readAsText(e.files[0], "ISO-8859-4");
+				fileReader.readAsText(e.files[0], "ISO-8859-1");
 			};
 
             $scope.fetchPlayerInfo = function () {
@@ -722,6 +721,16 @@
 
 <body>
     <div class="container-fluid" ng-controller="mainController">
+        <style>
+            video::cue {
+                opacity: 1;
+                background-color: {{ subtitlesBackgroundColor }};
+                font-size: {{ subtitlesFontSize }} !important;
+                color: {{ subtitlesTextColor }};
+                //text-shadow: 2px 2px black;
+            }
+        </style>
+    
 		<div class="row">
 			<div class="col-md-6">
                 <h1>Synced video player</h1>
@@ -874,16 +883,45 @@
 					<label>Subtitles</label>
 					<input type="file" class="form-control input-sm" accept=".srt" onchange="angular.element(this).scope().subtitleFileChanged(this)">
 				</div>
+				<div class="form-group">
+					<label>Subtitles font size</label>
+					<select  class="form-control input-sm" ng-model="subtitlesFontSize">
+                        <option>8px</option>
+                        <option>10px</option>
+                        <option>12px</option>
+                        <option>14px</option>
+                        <option>16px</option>
+                        <option>18px</option>
+                        <option>20px</option>
+                        <option>22px</option>
+                        <option>24px</option>
+                        <option>26px</option>
+                        <option>28px</option>
+                    </select>
+				</div>
+				<div class="form-group">
+					<label>Subtitles text color</label>
+					<select class="form-control input-sm" ng-model="subtitlesTextColor">
+                        <option>white</option>
+                        <option>yellow</option>
+                    </select>
+				</div>
+				<div class="form-group">
+					<label>Subtitles background color</label>
+					<select  class="form-control input-sm" ng-model="subtitlesBackgroundColor">
+                        <option>black</option>
+                        <option>transparent</option>
+                    </select>
+				</div>
 			</div>
 		</div>
 		<div class="row">
 			<div class="col-md-12">
-				<h2 style="margin-top: 30px">{{ 'TO DO' | translate }}</h2>
+				<h2 style="margin-top: 30px">{{ 'TO-DO' | translate }}</h2>
 				<ul>
-					<li>Subtitles appearance (font size, color)</li>
 					<li>Fullscreen mode</li>
+                    <li>Number of unread messages in head's title</li>
 					<li>Volume control</li>
-					<li>Unread messages in window name</li>
 				</ul>
 			</div>
 		</div>
