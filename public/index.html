@@ -761,7 +761,7 @@
         <div class="row">
             <div class="col-md-4">
                 <h2>{{ 'Messages' | translate }} ({{messages.length}})</h2>
-                <div class="bordered" style="height: 200px; overflow-y: scroll" scroll-glue>
+                <div class="bordered" style="height: 400px; overflow-y: scroll" scroll-glue>
                     <table class="table table-bordered table-condensed">
                         <tr ng-repeat="message in messages">
                             <td>
@@ -874,6 +874,17 @@
 					<label>Subtitles</label>
 					<input type="file" class="form-control input-sm" accept=".srt" onchange="angular.element(this).scope().subtitleFileChanged(this)">
 				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-12">
+				<h2 style="margin-top: 30px">{{ 'TO DO' | translate }}</h2>
+				<ul>
+					<li>Subtitles appearance (font size, color)</li>
+					<li>Fullscreen mode</li>
+					<li>Volume control</li>
+					<li>Unread messages in window name</li>
+				</ul>
 			</div>
 		</div>
 
