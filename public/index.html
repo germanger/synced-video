@@ -176,6 +176,7 @@
 			$scope.currentTime = 0;
 			$scope.draggingTimeline = false;
 			$scope.duration = 0;
+            $scope.unreadMessagesCount = 0;
             $scope.subtitlesSettings = {
                 fontSize: "20px",
                 textColor: "white",
@@ -298,6 +299,12 @@
                     });
                     
                     $scope.socket.on("userBroadcastsMessage", function(message) {
+                    
+                        if (document.visibilityState == "hidden") {
+                            $scope.unreadMessagesCount++;
+                            document.title = "(" + $scope.unreadMessagesCount + ") Synced Video";
+                        }
+                    
                         $scope.messages.push(message);
                         $scope.$apply()
                     });
@@ -740,8 +747,15 @@
 				$scope.draggingTimeline = false;
 				$scope.$apply();
 			};
-			
-
+            
+            document.addEventListener("visibilitychange", function () {
+                if (document.visibilityState == "visible") {
+                    $scope.unreadMessagesCount = 0;
+                    $scope.$apply();
+                    
+                    document.title = "Synced Video";
+                }
+            });
             
             $scope.connect();
         }]);
@@ -911,7 +925,6 @@
 				<h2 style="margin-top: 30px">{{ 'TO-DO' | translate }}</h2>
 				<ul>
 					<li>Fullscreen mode</li>
-                    <li>Number of unread messages in head's title</li>
 					<li>Volume control</li>
                     <li>Send voice messages?</li>
                     <li>Drawing?</li>
