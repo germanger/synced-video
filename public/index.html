@@ -10,6 +10,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/angularjs-toaster/0.4.12/toaster.min.css" />
     
     <style>
+        html {
+            overflow-y: scroll;
+        }
+        
         h1, h2, h3, h4 {
             color: #C49E73;
         }
@@ -34,7 +38,7 @@
             background-color: #2A2A2A;
         }
         
-        body {
+        body, .modal-content {
             font-size: 12px;
             color: #D5B3E5;
             background-color: #373737;
@@ -66,6 +70,10 @@
             border-color: #9D9D9D;
         }
         
+        .btn-success {
+            color: #000;
+        }
+        
         .nav-tabs>li.active>a, .nav-tabs>li.active>a:focus, .nav-tabs>li.active>a:hover {
             color: #ffffff;
             cursor: default;
@@ -84,12 +92,11 @@
         }
     </style>
     
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.14/angular.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.3.15/angular-animate.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.12.1/ui-bootstrap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.12.1/ui-bootstrap-tpls.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/2.5.0/ui-bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/2.5.0/ui-bootstrap-tpls.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angularjs-toaster/2.1.0/toaster.min.js"></script>
     <script src="https://cdn.rawgit.com/Luegg/angularjs-scroll-glue/v2.0.4/src/scrollglue.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/angularjs-toaster/0.4.12/toaster.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bower-angular-translate/2.7.1/angular-translate.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-translate-storage-cookie/2.7.2/angular-translate-storage-cookie.min.js"></script>
     <script src="https://cdn.socket.io/socket.io-1.3.5.js"></script>
@@ -153,7 +160,14 @@
             };
         });
         
-        angular.module('syncedVideoApp').controller('mainController', ['$scope', '$http', '$window', 'toaster', '$interval', '$location', '$translate', function ($scope, $http, $window, toaster, $interval, $location, $translate) {
+        angular.module('syncedVideoApp').controller('settingsController', ['$scope', '$http', '$filter', '$uibModalInstance', '$window', function ($scope, $http, $filter, $uibModalInstance, $window) {
+
+            $scope.cancel = function () {
+                $uibModalInstance.dismiss('cancel');
+            };
+        }]);
+        
+        angular.module('syncedVideoApp').controller('mainController', ['$scope', '$http', '$window', 'toaster', '$interval', '$location', '$translate', '$uibModal', function ($scope, $http, $window, toaster, $interval, $location, $translate, $uibModal) {
 
             $scope.url = "";
             $scope.socket = null;
@@ -162,9 +176,11 @@
 			$scope.currentTime = 0;
 			$scope.draggingTimeline = false;
 			$scope.duration = 0;
-            $scope.subtitlesFontSize = "20px";
-            $scope.subtitlesTextColor = "white";
-            $scope.subtitlesBackgroundColor = "transparent";
+            $scope.subtitlesSettings = {
+                fontSize: "20px",
+                textColor: "white",
+                backgroundColor: "black"
+            };
             $scope.logged = false;
             $scope.newMessageBody = "";
             $scope.lastPlayerInfo = {
@@ -181,6 +197,19 @@
             
             $scope.setLanguage = function() {
                 $translate.use($scope.currentLanguage);
+            };
+            
+            $scope.openSettingsModal = function () {
+
+                var modalInstance = $uibModal.open({
+                    templateUrl: 'settings-modal.html',
+                    controller: 'settingsController',
+                    scope: $scope,
+                    backdrop: false
+                });
+
+                modalInstance.result.then(function (result) {
+                }, null);
             };
 
             $scope.updateIsTyping = function (isTyping) {
@@ -724,9 +753,9 @@
         <style>
             video::cue {
                 opacity: 1;
-                background-color: {{ subtitlesBackgroundColor }};
-                font-size: {{ subtitlesFontSize }} !important;
-                color: {{ subtitlesTextColor }};
+                background-color: {{ subtitlesSettings.backgroundColor }};
+                font-size: {{ subtitlesSettings.fontSize }} !important;
+                color: {{ subtitlesSettings.textColor }};
                 //text-shadow: 2px 2px black;
             }
         </style>
@@ -768,7 +797,7 @@
 			</div>
 		</div>
         <div class="row">
-            <div class="col-md-4">
+            <div class="col-sm-3">
                 <h2>{{ 'Messages' | translate }} ({{messages.length}})</h2>
                 <div class="bordered" style="height: 400px; overflow-y: scroll" scroll-glue>
                     <table class="table table-bordered table-condensed">
@@ -798,8 +827,8 @@
                                         <strong style="color: #FFAF99">{{message.user.username}}'s player new state: {{message.user.playerState == 2 ? "Paused" : message.user.playerState == 1 ? "Playing" : "" }}</strong>
                                     </div>-->
                                     <div ng-switch-when="userSentCommand">
-                                        <strong style="color: #FFAF99" ng-if="message.player.state == 1">{{message.user.username}} clicked play, at: {{message.player.time | number: 2}} seconds</strong>
-										<strong style="color: #FFAF99" ng-if="message.player.state == 2">{{message.user.username}} clicked pause, at: {{message.player.time | number: 2}} seconds</strong>
+                                        <strong style="color: #FFAF99" ng-if="message.player.state == 1">{{message.user.username}} clicked play @ {{message.player.time / 60 | number: 2}} min</strong>
+										<strong style="color: #FFAF99" ng-if="message.player.state == 2">{{message.user.username}} clicked pause @ {{message.player.time / 60 | number: 2}} min</strong>
                                     </div>
                                     <div ng-switch-when="userClearedMessages">
                                         <strong style="color: #FFAF99">{{ 'username cleared messages' | translate:{ username: message.user.username } }}</strong>
@@ -823,16 +852,19 @@
                     </div>
                 </form>
             </div>
-            <div class="col-md-8">                
+            <div class="col-sm-9">                
                 <h2>{{ 'Player' | translate }}</h2>
 				<video style="border: 1px solid black; width: 100%">
 					<source src="" type="video/mp4">
 				</video>
 				
-				<input id="timeline" ng-model="timelineValue" type="range" min="0" max="500" step="0.001" />
+				<input id="timeline" ng-model="timelineValue" type="range" min="0" max="500" step="0.001" style="cursor: pointer" />
 
                 <form class="form-inline" style="text-align: center; margin-top: 15px" ng-show="logged">
 					<span>{{ currentTime/60 | number: 2 }} min</span>
+                    <div class="form-group">
+                        <button class="btn btn-success btn-sm" ng-click="openSettingsModal()" ng-disabled="">Settings</button>
+                    </div>
                     <div class="form-group">
                         <button class="btn btn-default btn-sm" ng-click="submitCommand(1, currentTime - 10)" ng-disabled="sendingCommand"><span class="glyphicon glyphicon-backward" /> 10s</button>
                     </div>
@@ -850,7 +882,7 @@
             </div>
         </div>
         <div class="row">
-			<div class="col-md-8">
+			<div class="col-md-12">
                 <h2 style="margin-top: 30px">{{ 'Users' | translate }} ({{users.length}})</h2>
                 <div class="bordered" style="height: 200px; overflow-y: scroll">
                     <table class="table table-bordered table-condensed">
@@ -873,47 +905,6 @@
                     </table>
                 </div>
 			</div>
-			<div class="col-md-4">
-                <h2 style="margin-top: 30px">{{ 'Change video' | translate }}</h2>
-				<div class="form-group">
-					<label>Video</label>
-					<input type="file" class="form-control input-sm" accept="video/*" onchange="angular.element(this).scope().videoFileChanged(this)">
-				</div>
-				<div class="form-group">
-					<label>Subtitles</label>
-					<input type="file" class="form-control input-sm" accept=".srt" onchange="angular.element(this).scope().subtitleFileChanged(this)">
-				</div>
-				<div class="form-group">
-					<label>Subtitles font size</label>
-					<select  class="form-control input-sm" ng-model="subtitlesFontSize">
-                        <option>8px</option>
-                        <option>10px</option>
-                        <option>12px</option>
-                        <option>14px</option>
-                        <option>16px</option>
-                        <option>18px</option>
-                        <option>20px</option>
-                        <option>22px</option>
-                        <option>24px</option>
-                        <option>26px</option>
-                        <option>28px</option>
-                    </select>
-				</div>
-				<div class="form-group">
-					<label>Subtitles text color</label>
-					<select class="form-control input-sm" ng-model="subtitlesTextColor">
-                        <option>white</option>
-                        <option>yellow</option>
-                    </select>
-				</div>
-				<div class="form-group">
-					<label>Subtitles background color</label>
-					<select  class="form-control input-sm" ng-model="subtitlesBackgroundColor">
-                        <option>black</option>
-                        <option>transparent</option>
-                    </select>
-				</div>
-			</div>
 		</div>
 		<div class="row">
 			<div class="col-md-12">
@@ -922,6 +913,8 @@
 					<li>Fullscreen mode</li>
                     <li>Number of unread messages in head's title</li>
 					<li>Volume control</li>
+                    <li>Send voice messages?</li>
+                    <li>Drawing?</li>
 				</ul>
 			</div>
 		</div>
@@ -931,6 +924,64 @@
         
         <toaster-container toaster-options="{'time-out': 3000, 'close-button': true, 'position-class': 'toast-bottom-right'}"></toaster-container>
     </div>
+    
+    <script type="text/ng-template" id="settings-modal.html">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <span>Settings</span>
+            </h3>
+        </div>
+        <div class="modal-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Video</label>
+                        <input type="file" class="form-control input-sm" accept="video/*" onchange="angular.element(this).scope().videoFileChanged(this)">
+                    </div>
+                    <div class="form-group">
+                        <label>Subtitles</label>
+                        <input type="file" class="form-control input-sm" accept=".srt" onchange="angular.element(this).scope().subtitleFileChanged(this)">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Subtitles font size</label>
+                        <select  class="form-control input-sm" ng-model="subtitlesSettings.fontSize">
+                            <option>8px</option>
+                            <option>10px</option>
+                            <option>12px</option>
+                            <option>14px</option>
+                            <option>16px</option>
+                            <option>18px</option>
+                            <option>20px</option>
+                            <option>22px</option>
+                            <option>24px</option>
+                            <option>26px</option>
+                            <option>28px</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Subtitles text color</label>
+                        <select class="form-control input-sm" ng-model="subtitlesSettings.textColor">
+                            <option>white</option>
+                            <option>yellow</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Subtitles background color</label>
+                        <select  class="form-control input-sm" ng-model="subtitlesSettings.backgroundColor">
+                            <option>black</option>
+                            <option>transparent</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary btn-sm" ng-click="cancel()" ng-disabled="working">Close</button>
+        </div>
+
+    </script>
 
 </body>
 </html>

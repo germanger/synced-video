@@ -47,10 +47,12 @@ The following scripts are referenced directly in public/index.html
 
 ## TO-DOs
 
+- Fullscreen
+- Number of unread messages in head's title
+- Volume control
+- Send voice messages?
+- Drawing?
 - Consider a possible "buffering" state
-- Player's timeline control
-- Player's volume control
-- Player's currentTime/totalTime indicator
 
 ## Screenshot
 
