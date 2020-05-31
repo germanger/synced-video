@@ -43,6 +43,10 @@
             color: #D5B3E5;
             background-color: #373737;
         }
+		
+		#chat-and-video:fullscreen { 
+			background-color: #373737;
+		}
         
         .table-bordered {
             border: 0px dashed #7A6482;
@@ -781,6 +785,14 @@
                     $scope.sendingCommand = false;
                 });
             };
+			
+            $scope.toggleFullscreen = function() {
+				if (document.fullscreenElement) { 
+					document.exitFullscreen();
+				} else {
+					document.querySelector('#chat-and-video').requestFullscreen();
+				}
+            };
 
 			var videoNode = document.querySelector('video');
 			var timelineNode = document.querySelector('#timeline');
@@ -869,7 +881,7 @@
                 </form>
 			</div>
 		</div>
-        <div class="row">
+        <div class="row" id="chat-and-video">
             <div class="col-sm-3">
                 <h2>{{ 'Messages' | translate }} ({{messages.length}})</h2>
                 <div id="messages" class="bordered" style="height: 400px; overflow-y: scroll" scroll-glue>
@@ -951,6 +963,9 @@
                     <div class="form-group">
                         <button class="btn btn-default btn-sm" ng-click="submitCommand(1, currentTime + 10)" ng-disabled="sendingCommand"><span class="glyphicon glyphicon-forward" /> 10s</button>
                     </div>
+                    <div class="form-group">
+                        <button class="btn btn-default btn-sm" ng-click="toggleFullscreen()" ng-disabled=""><span class="glyphicon glyphicon-fullscreen" /></button>
+                    </div>
 					<span>{{ currentUser.videoDuration | secondsToDateTime | date: 'HH:mm:ss' }}</span>
                 </form>
             </div>
@@ -984,9 +999,9 @@
 			<div class="col-md-12">
 				<h2 style="margin-top: 30px">{{ 'TO-DO' | translate }}</h2>
 				<ul>
-					<li>Fullscreen mode</li>
+					<li>Make "is typing" easier to see</li>
 					<li>Volume control</li>
-					<li>Resize video and chat</li>
+					<li>Resize video and chat horizontally</li>
 					<li>Autohide timeline</li>
 					<li>Chat replying?</li>
                     <li>Send voice messages?</li>
