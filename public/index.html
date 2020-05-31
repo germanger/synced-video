@@ -90,6 +90,17 @@
         .nav-tabs>li>a {
             border: 0px;
         }
+		
+		.vertical-resizer {
+			height: 7px; 
+			background-color: #272727; 
+			margin-bottom: 18px; 
+			cursor: ns-resize;
+		}
+		
+		.vertical-resizer:hover {
+			background-color: #77D372;
+		}
     </style>
     
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular.min.js"></script>
@@ -107,6 +118,54 @@
         'luegg.directives',
         'toaster',
         'pascalprecht.translate']);
+		
+		angular.module('syncedVideoApp').filter('secondsToDateTime', [function() {
+			return function(seconds) {
+				return new Date(1970, 0, 1).setSeconds(seconds);
+			};
+		}]);
+		
+		angular.module('syncedVideoApp').directive('resizeTarget', ['$document', '$window', function($document, $window) {
+
+			return function($scope, $element, $attrs) {
+
+				$element.on('mousedown', function(event) {
+					event.preventDefault();
+
+					$document.on('mousemove', mousemove); // relies on jQuery
+					$document.on('mouseup', mouseup); // relies on jQuery
+				});
+
+				function mousemove(event) {
+					var y = window.innerHeight - event.pageY;
+
+					var targetElement = angular.element(document.querySelector($attrs.resizeTarget)); 
+					var scale = event.movementY;
+					var currentHeight = parseInt(targetElement.css('height'));
+					var newHeight = currentHeight + (scale * 1);
+
+					if (newHeight < 100) {
+						return;
+					}
+
+					// Set new height via css
+					targetElement.css({
+						height: newHeight + 'px'
+					});
+
+					// Trigger resize
+					$(window).resize();
+				};
+
+				function mouseup(event) {
+					//$window.trigger("resize");
+				  
+					$document.unbind('mousemove', mousemove);
+					$document.unbind('mouseup', mouseup);
+				};
+			};
+
+		}]);
         
         angular.module('syncedVideoApp').config(['$translateProvider', function($translateProvider) {
             $translateProvider.translations('en', {
@@ -813,7 +872,7 @@
         <div class="row">
             <div class="col-sm-3">
                 <h2>{{ 'Messages' | translate }} ({{messages.length}})</h2>
-                <div class="bordered" style="height: 400px; overflow-y: scroll" scroll-glue>
+                <div id="messages" class="bordered" style="height: 400px; overflow-y: scroll" scroll-glue>
                     <table class="table table-bordered table-condensed">
                         <tr ng-repeat="message in messages">
                             <td>
@@ -852,6 +911,7 @@
                         </tr>
                     </table>
                 </div>
+				<div class="vertical-resizer" resize-target="#messages"></div>
                 <form style="margin-top: 15px" ng-show="logged">
                     <div class="form-group">
                         <textarea style="resize: vertical;" rows="3" class="form-control bordered" ng-model="newMessageBody" ng-enter="submitMessage()" placeholder="Write something..."></textarea>
@@ -868,14 +928,14 @@
             </div>
             <div class="col-sm-9">                
                 <h2>{{ 'Player' | translate }}</h2>
-				<video style="border: 1px solid black; width: 100%">
+				<video id="player" style="border: 1px solid black; width: 100%">
 					<source src="" type="video/mp4">
 				</video>
 				
 				<input id="timeline" ng-model="timelineValue" type="range" min="0" max="500" step="0.001" style="cursor: pointer" />
 
                 <form class="form-inline" style="text-align: center; margin-top: 15px" ng-show="logged">
-					<span>{{ currentTime/60 | number: 2 }} min</span>
+					<span>{{ currentTime | secondsToDateTime | date: 'HH:mm:ss' }}</span>
                     <div class="form-group">
                         <button class="btn btn-success btn-sm" ng-click="openSettingsModal()" ng-disabled="">Settings</button>
                     </div>
@@ -891,7 +951,7 @@
                     <div class="form-group">
                         <button class="btn btn-default btn-sm" ng-click="submitCommand(1, currentTime + 10)" ng-disabled="sendingCommand"><span class="glyphicon glyphicon-forward" /> 10s</button>
                     </div>
-					<span>{{ currentUser.videoDuration/60 | number: 2 }} min</span>
+					<span>{{ currentUser.videoDuration | secondsToDateTime | date: 'HH:mm:ss' }}</span>
                 </form>
             </div>
         </div>
@@ -912,7 +972,7 @@
                             <td>{{user.username}}</td>
 							<td>{{user.videoFileName}}</td>
 							<td>{{(user.videoFileSize/1024/1024/1024) | number: 2}} GB</td>
-							<td>{{(user.videoDuration/60) | number: 1}} min</td>
+							<td>{{ currentUser.videoDuration | secondsToDateTime | date: 'HH:mm:ss' }}</td>
                             <!--<td>{{user.playerState == 2 ? "Paused" : user.playerState == 1 ? "Playing" : "" }}</td>-->
                             <td><span ng-show="user.isTyping">{{ 'typing...' | translate }}</span></td>
                         </tr>
@@ -926,6 +986,9 @@
 				<ul>
 					<li>Fullscreen mode</li>
 					<li>Volume control</li>
+					<li>Resize video and chat</li>
+					<li>Autohide timeline</li>
+					<li>Chat replying?</li>
                     <li>Send voice messages?</li>
                     <li>Drawing?</li>
 				</ul>
