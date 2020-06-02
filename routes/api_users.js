@@ -163,6 +163,24 @@ router.get('/updateIsTyping', function(req, res, next) {
     });
 });
 
+router.get('/updateIsAway', function(req, res, next) {
+
+    if (!res.user) {
+        return next(new Error('socketId not found in list of users'));
+    }
+    
+    res.user.isAway = JSON.parse(req.query.isAway);
+       
+    // Broadcast
+    shared.io.to(res.user.roomId).emit('userUpdatedIsAway', {
+    });
+
+    res.json({
+        error: false,
+        message: ''
+    });
+});
+
 router.get('/list', function(req, res, next) {
 
     if (!res.user) {
@@ -182,7 +200,8 @@ router.get('/list', function(req, res, next) {
 						videoDuration: user.videoDuration,
 						color: user.color,
 						playerState: user.playerState,
-						isTyping: user.isTyping
+						isTyping: user.isTyping,
+						isAway: user.isAway
 					}
 				}),
     });

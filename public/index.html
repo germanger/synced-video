@@ -301,6 +301,32 @@
                     $scope.updatingIsTyping = false;
                 });
             };
+			
+            $scope.updateIsAway = function (isAway) {
+                $scope.updatingIsAway = true;
+                
+                var httpRequest = $http({
+                    method: "get",
+                    url: "/api/users/updateIsAway",
+                    params: {
+                        socketId: $scope.socket.id,
+                        isAway: isAway
+                    },
+                    data: {}
+                });
+                
+                httpRequest.success(function(response) {
+                
+                    if (response.error) {
+                        toaster.pop('error', "", response.message);
+                        return;
+                    }
+                });
+                
+                httpRequest['finally'](function() {
+                    $scope.updatingIsAway = false;
+                });
+            };
             
             $scope.$watch('newMessageBody', function(newValue, oldValue) {                        
                 if (oldValue.length == 0 && newValue.length > 0) {
@@ -402,6 +428,11 @@
                     });
                     
                     $scope.socket.on("userUpdatedIsTyping", function(data) {
+                        $scope.fetchUsers();
+                        $scope.$apply()
+                    });
+					
+                    $scope.socket.on("userUpdatedIsAway", function(data) {
                         $scope.fetchUsers();
                         $scope.$apply()
                     });
@@ -820,12 +851,16 @@
 			};
             
             document.addEventListener("visibilitychange", function () {
-                if (document.visibilityState == "visible") {
+				var visible = document.visibilityState == "visible";
+			
+                if (visible) {
                     $scope.unreadMessagesCount = 0;
                     $scope.$apply();
                     
                     document.title = "Synced Video";
                 }
+				
+				$scope.updateIsAway(!visible)
             });
             
             $scope.connect();
@@ -977,19 +1012,17 @@
                     <table class="table table-bordered table-condensed">
                         <tr>
                             <th>username</th>
+							<th style="width: 70px">chat</th>
 							<th>video file</th>
 							<th>size</th>
 							<th>duration</th>
-                            <!--<th>player state</th>-->
-                            <th style="width: 70px">chat</th>
                         </tr>
                         <tr ng-repeat="user in users" style="color: {{ user.color }}">
                             <td>{{user.username}}</td>
+							<td><em ng-show="user.isAway">{{ '(away)' | translate }}</em><span ng-show="user.isTyping">{{ 'typing...' | translate }}</span></td>
 							<td>{{user.videoFileName}}</td>
 							<td>{{(user.videoFileSize/1024/1024/1024) | number: 2}} GB</td>
 							<td>{{ currentUser.videoDuration | secondsToDateTime | date: 'HH:mm:ss' }}</td>
-                            <!--<td>{{user.playerState == 2 ? "Paused" : user.playerState == 1 ? "Playing" : "" }}</td>-->
-                            <td><span ng-show="user.isTyping">{{ 'typing...' | translate }}</span></td>
                         </tr>
                     </table>
                 </div>
@@ -999,6 +1032,7 @@
 			<div class="col-md-12">
 				<h2 style="margin-top: 30px">{{ 'TO-DO' | translate }}</h2>
 				<ul>
+					<li>MKV</li>
 					<li>Make "is typing" easier to see</li>
 					<li>Volume control</li>
 					<li>Resize video and chat horizontally</li>

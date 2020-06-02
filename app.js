@@ -157,7 +157,9 @@ shared.io.sockets.on('connection', function (socket) {
 		color: "#" + randomColor,
 		videoFileName: "",
 		videoFileSize: 0,
-		videoDuration: 0
+		videoDuration: 0,
+		isTyping: false,
+		isAway: false
     };
 
     shared.users[socket.id] = user;
