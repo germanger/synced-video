@@ -41,11 +41,18 @@ shared.io.sockets.on('connection', function (socket) {
     // new user
     var userId = shortid.generate();
 	
-	var randomColor = (function lol(m, s, c) {
-			return s[m.floor(m.random() * s.length)] +
-				(c && lol(m, s, c - 1));
-		})(Math, '3456789ABCDEF', 4);
-		
+	var suggestedColors = [
+		"#83DF70",
+		"#70dfd5",
+		"#8987e0",
+		"#c687e0",
+		"#e087b0",
+		"#e06d6d",
+		"#e0dc6d",
+		"#aee06d",
+		"#e0976d",
+	];
+	
 	var suggestedNames = [
 		"Stanley Kubrick",
 		"Ingmar Bergman",
@@ -154,7 +161,7 @@ shared.io.sockets.on('connection', function (socket) {
         userId: userId,
         socketId: socket.id,
         username: suggestedNames[Math.floor(Math.random() * suggestedNames.length)],
-		color: "#" + randomColor,
+		color: suggestedColors[Math.floor(Math.random() * suggestedColors.length)],
 		videoFileName: "",
 		videoFileSize: 0,
 		videoDuration: 0,

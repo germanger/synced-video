@@ -1,5 +1,6 @@
 module.exports = {
     io: {},
     rooms: {},
-    users: {}
+    users: {},
+	turn: undefined
 };
