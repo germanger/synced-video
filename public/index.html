@@ -45,7 +45,27 @@
         }
 		
 		#chat-and-video:fullscreen { 
-			background-color: #373737;
+			background-color: black;
+		}
+		
+		:-webkit-full-screen .hide-when-fullscreen {
+		  display: none;
+		}
+
+		:-moz-full-screen .hide-when-fullscreen {
+		  display: none;
+		}
+
+		:-ms-fullscreen .hide-when-fullscreen {
+		  display: none;
+		}
+		
+		:fullscreen .hide-when-fullscreen {
+			display: none;
+		}
+		
+		.table {
+			margin-bottom: 0px;
 		}
         
         .table-bordered {
@@ -105,8 +125,37 @@
 		.vertical-resizer:hover {
 			background-color: #77D372;
 		}
+		
+		#right {
+			position: absolute;
+			left: 1007px /* 1000 + 7*/;
+			right: 0;
+			overflow: auto;
+		}
+		
+		#left {
+			position: absolute;
+			left: 0;
+			width: 1000px;
+			overflow: hidden;
+		}
+		
+		#horizontal-resizer {
+			background-color: #272727;
+			position: absolute;
+			top: 0px;
+			bottom: 0;
+			left: 1000px;
+			width: 7px;
+			cursor: e-resize;
+		}
+		
+		#horizontal-resizer:hover, #preview-resizer:hover {
+			background-color: #77D372;
+		}
     </style>
     
+	<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/2.5.0/ui-bootstrap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/2.5.0/ui-bootstrap-tpls.min.js"></script>
@@ -170,6 +219,62 @@
 			};
 
 		}]);
+		
+		angular.module('syncedVideoApp').directive('resizer', ['$document', function($document) {
+
+			return function($scope, $element, $attrs) {
+
+				$element.on('mousedown', function(event) {
+					event.preventDefault();
+
+					$document.on('mousemove', mousemove);
+					$document.on('mouseup', mouseup);
+				});
+
+				function mousemove(event) {
+
+					if ($attrs.resizer == 'vertical') {
+						// Handle vertical resizer
+						var x = event.pageX;
+
+						if ($attrs.resizerMax && x > $attrs.resizerMax) {
+							x = parseInt($attrs.resizerMax);
+						}
+
+						$element.css({
+							left: x + 'px'
+						});
+
+						$($attrs.resizerLeft).css({
+							width: x + 'px'
+						});
+						$($attrs.resizerRight).css({
+							left: (x + parseInt($attrs.resizerWidth)) + 'px'
+						});
+
+					} else {
+						// Handle horizontal resizer
+						var y = window.innerHeight - event.pageY;
+
+						$element.css({
+							bottom: y + 'px'
+						});
+
+						$($attrs.resizerTop).css({
+							bottom: (y + parseInt($attrs.resizerHeight)) + 'px'
+						});
+						$($attrs.resizerBottom).css({
+							height: y + 'px'
+						});
+					}
+				}
+
+				function mouseup() {
+					$document.unbind('mousemove', mousemove);
+					$document.unbind('mouseup', mouseup);
+				}
+			};
+		}]);
         
         angular.module('syncedVideoApp').config(['$translateProvider', function($translateProvider) {
             $translateProvider.translations('en', {
@@ -199,7 +304,7 @@
                 'Set': 'Aplicar',
                 'Clear messages': 'Limpiar mensajes',
                 'says': 'dice',
-                'typing...': 'escribiendo...',
+                'is typing...': 'está escribiendo...',
                 'TO-DO': 'Por hacer',
                 'Type some keywords': 'Escribe qué buscar',
                 'Developed by': 'Desarrollado por',
@@ -818,8 +923,8 @@
             };
 			
             $scope.toggleFullscreen = function() {
-				if (document.fullscreenElement) { 
-					document.exitFullscreen();
+				if (document.fullscreenElement) {
+					document.exitFullscreen();	
 				} else {
 					document.querySelector('#chat-and-video').requestFullscreen();
 				}
@@ -880,100 +985,23 @@
             }
         </style>
     
-		<div class="row">
-			<div class="col-md-6">
-                <h1>Synced video player</h1>
-                <p>
-                    {{ 'Watch a video with your friends at the same time' | translate }}.<br />
-                    {{ 'The code is available at' | translate }} <a href="https://github.com/germanger/synced-video" target="_blank">GitHub</a>
-                </p>
-                <form class="form-inline">
-                    <select class="form-control" ng-model="currentLanguage" ng-change="setLanguage()">
-                        <option value="es">Español</option>
-                        <option value="en">English</option>
-                    </select>
-                </form>
-			</div>
-			<div class="col-md-6">
-                <h2>{{ 'Change your name and color' | translate }}</h2>
-                <form class="form-inline" style="margin-top: 15px" ng-show="logged">
-                    <div class="form-group">
-                        <input type="text" class="form-control input-sm" ng-model="currentUser.newUsername" placeholder="{{ currentUser.username }}" />
-                    </div>
-                    <div class="form-group">
-                        <button class="btn btn-default btn-sm" ng-click="changeName()" ng-disabled="username == '' || changingName">{{ 'Set' | translate }}</button>
-                    </div>
-                    <div class="form-group">
-                        <input type="color" class="form-control input-sm" ng-model="currentUser.color" style="width: 50px" ng-change="changeColor()" />
-                    </div>
-                </form>
-                
-                <h2>{{ 'Copy link and invite people' | translate }}</h2>
-                <form style="margin-top: 15px" ng-show="logged">
-                    <div class="form-group">
-                        <input type="text" class="form-control input-sm" ng-model="url" ng-readonly="true" />
-                    </div>
-                </form>
-			</div>
-		</div>
-        <div class="row" id="chat-and-video">
-            <div class="col-sm-3">
-                <h2>{{ 'Messages' | translate }} ({{messages.length}})</h2>
-                <div id="messages" class="bordered" style="height: 400px; overflow-y: scroll" scroll-glue>
-                    <table class="table table-bordered table-condensed">
-                        <tr ng-repeat="message in messages">
-                            <td>
-                                <div ng-switch="message.messageType">
-                                    <div ng-switch-when="userBroadcastsMessage" style="color: {{ message.user.color }}">
-                                        <strong>{{message.user.username || message.user.userId}}</strong> {{ 'says' | translate }}:<br />
-                                        <p>{{message.chatMessage.body}}</p>
-                                    </div>
-                                    <div ng-switch-when="userConnected">
-                                        <strong style="color: #FFAF99">{{ 'username connected' | translate:{ username: message.user.username } }}</strong>
-                                    </div>
-                                    <div ng-switch-when="userDisconnected">
-                                        <strong style="color: #FFAF99">{{ 'username disconnected' | translate:{ username: message.user.username } }}</strong>
-                                    </div>
-                                    <div ng-switch-when="userChangedName">
-                                        <strong style="color: #FFAF99">{{ 'oldUsername is now newUsername' | translate:{ oldUsername: message.data.oldUsername, newUsername: message.data.newUsername } }}</strong>
-                                    </div>
-                                    <div ng-switch-when="userChangedColor">
-                                        <strong style="color: #FFAF99">{{ message.user.username }} changed their color</strong>
-                                    </div>
-                                    <div ng-switch-when="userChangedVideo">
-                                        <strong style="color: #FFAF99">{{ 'username changed video' | translate:{ username: message.user.username } }}</strong>
-                                    </div>
-                                    <!--<div ng-switch-when="userChangedPlayerState">
-                                        <strong style="color: #FFAF99">{{message.user.username}}'s player new state: {{message.user.playerState == 2 ? "Paused" : message.user.playerState == 1 ? "Playing" : "" }}</strong>
-                                    </div>-->
-                                    <div ng-switch-when="userSentCommand">
-                                        <strong style="color: #FFAF99" ng-if="message.player.state == 1">{{message.user.username}} clicked play @ {{message.player.time / 60 | number: 2}} min</strong>
-										<strong style="color: #FFAF99" ng-if="message.player.state == 2">{{message.user.username}} clicked pause @ {{message.player.time / 60 | number: 2}} min</strong>
-                                    </div>
-                                    <div ng-switch-when="userClearedMessages">
-                                        <strong style="color: #FFAF99">{{ 'username cleared messages' | translate:{ username: message.user.username } }}</strong>
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-				<div class="vertical-resizer" resize-target="#messages"></div>
-                <form style="margin-top: 15px" ng-show="logged">
-                    <div class="form-group">
-                        <textarea style="resize: vertical;" rows="3" class="form-control bordered" ng-model="newMessageBody" ng-enter="submitMessage()" placeholder="Write something..."></textarea>
-                    </div>
-                </form>
-                <form class="form-inline" ng-show="logged">
-                    <div class="form-group">
-                        <button class="btn btn-default btn-sm" ng-click="submitMessage()" ng-disabled="sendingMessage">{{ 'Send' | translate }}</button>
-                    </div>
-                    <div class="form-group">
-                        <button class="btn btn-default btn-sm" ng-click="clearMessages()" ng-disabled="clearingMessages">{{ 'Clear messages' | translate }}</button>
-                    </div>
-                </form>
-            </div>
-            <div class="col-sm-9">                
+        <div id="chat-and-video">
+            <div id="left">
+				<div class="hide-when-fullscreen">
+					<h1>Synced video player</h1>
+					<p>
+						{{ 'Watch a video with your friends at the same time' | translate }}.<br />
+						{{ 'The code is available at' | translate }} <a href="https://github.com/germanger/synced-video" target="_blank">GitHub</a><br />
+						{{ 'Developed by' | translate }} <a href="http://www.manger.cl" targer="_blank">manger.cl</a>
+					</p>
+					<form class="form-inline">
+						<select class="form-control" ng-model="currentLanguage" ng-change="setLanguage()">
+							<option value="es">Español</option>
+							<option value="en">English</option>
+						</select>
+					</form>
+				</div>
+				
                 <h2>{{ 'Player' | translate }}</h2>
 				<video id="player" style="border: 1px solid black; width: 100%">
 					<source src="" type="video/mp4">
@@ -1004,49 +1032,115 @@
 					<span>{{ currentUser.videoDuration | secondsToDateTime | date: 'HH:mm:ss' }}</span>
                 </form>
             </div>
-        </div>
-        <div class="row">
-			<div class="col-md-12">
-                <h2 style="margin-top: 30px">{{ 'Users' | translate }} ({{users.length}})</h2>
-                <div class="bordered" style="height: 200px; overflow-y: scroll">
+            <div id="right">
+				<div class="hide-when-fullscreen">
+					<h2>{{ 'Change your name and color' | translate }}</h2>
+					<form class="form-inline" style="margin-top: 15px" ng-show="logged">
+						<div class="form-group">
+							<input type="text" class="form-control input-sm" ng-model="currentUser.newUsername" placeholder="{{ currentUser.username }}" />
+						</div>
+						<div class="form-group">
+							<button class="btn btn-default btn-sm" ng-click="changeName()" ng-disabled="username == '' || changingName">{{ 'Set' | translate }}</button>
+						</div>
+						<div class="form-group">
+							<input type="color" class="form-control input-sm" ng-model="currentUser.color" style="width: 50px" ng-change="changeColor()" />
+						</div>
+					</form>
+					
+					<h2>{{ 'Copy link and invite people' | translate }}</h2>
+					<form style="margin-top: 15px" ng-show="logged">
+						<div class="form-group">
+							<input type="text" class="form-control input-sm" ng-model="url" ng-readonly="true" />
+						</div>
+					</form>
+				</div>
+				<h2 style="margin-top: 30px">{{ 'Users' | translate }} ({{users.length}})</h2>
+				<div id="users" class="bordered" style="height: 120px; overflow-y: scroll">
+					<table class="table table-bordered table-condensed">
+						<tr ng-repeat="user in users" style="color: {{ user.color }}">
+							<td>{{user.username}} <em ng-show="user.isAway">({{ 'away' | translate }})</em><em ng-show="user.isTyping">({{ 'is typing...' | translate }})</em></td>
+						</tr>
+					</table>
+				</div>
+				<div class="vertical-resizer" resize-target="#users"></div>
+                <h2>{{ 'Messages' | translate }} ({{messages.length}})</h2>
+                <div id="messages" class="bordered" style="height: 400px; overflow-y: scroll" scroll-glue>
                     <table class="table table-bordered table-condensed">
-                        <tr>
-                            <th>username</th>
-							<th style="width: 70px">chat</th>
-							<th>video file</th>
-							<th>size</th>
-							<th>duration</th>
-                        </tr>
-                        <tr ng-repeat="user in users" style="color: {{ user.color }}">
-                            <td>{{user.username}}</td>
-							<td><em ng-show="user.isAway">{{ '(away)' | translate }}</em><span ng-show="user.isTyping">{{ 'typing...' | translate }}</span></td>
-							<td>{{user.videoFileName}}</td>
-							<td>{{(user.videoFileSize/1024/1024/1024) | number: 2}} GB</td>
-							<td>{{ currentUser.videoDuration | secondsToDateTime | date: 'HH:mm:ss' }}</td>
+                        <tr ng-repeat="message in messages">
+                            <td>
+                                <div ng-switch="message.messageType">
+                                    <div ng-switch-when="userBroadcastsMessage" style="color: {{ message.user.color }}">
+                                        <strong>{{message.user.username || message.user.userId}}</strong> {{ 'says' | translate }}:<br />
+                                        <p>{{message.chatMessage.body}}</p>
+                                    </div>
+                                    <div ng-switch-when="userConnected">
+                                        <strong style="color: #FFAF99">{{ 'username connected' | translate:{ username: message.user.username } }}</strong>
+                                    </div>
+                                    <div ng-switch-when="userDisconnected">
+                                        <strong style="color: #FFAF99">{{ 'username disconnected' | translate:{ username: message.user.username } }}</strong>
+                                    </div>
+                                    <div ng-switch-when="userChangedName">
+                                        <strong style="color: #FFAF99">{{ 'oldUsername is now newUsername' | translate:{ oldUsername: message.data.oldUsername, newUsername: message.data.newUsername } }}</strong>
+                                    </div>
+                                    <div ng-switch-when="userChangedColor">
+                                        <strong style="color: #FFAF99">{{ message.user.username }} changed their color</strong>
+                                    </div>
+                                    <div ng-switch-when="userChangedVideo">
+                                        <strong style="color: #FFAF99">{{ 'username changed video' | translate:{ username: message.user.username } }}: "{{ message.data.videoFileName }}" ({{ message.data.videoFileSize/1024/1024/1024 | number: 2 }} GB, duration: {{ message.data.videoDuration | secondsToDateTime | date: 'HH:mm:ss' }})</strong>
+                                    </div>
+                                    <div ng-switch-when="userSentCommand">
+                                        <strong style="color: #FFAF99" ng-if="message.player.state == 1">{{message.user.username}} clicked play @ {{message.player.time / 60 | number: 2}} min</strong>
+										<strong style="color: #FFAF99" ng-if="message.player.state == 2">{{message.user.username}} clicked pause @ {{message.player.time / 60 | number: 2}} min</strong>
+                                    </div>
+                                    <div ng-switch-when="userClearedMessages">
+                                        <strong style="color: #FFAF99">{{ 'username cleared messages' | translate:{ username: message.user.username } }}</strong>
+                                    </div>
+                                </div>
+                            </td>
                         </tr>
                     </table>
                 </div>
+				<div class="vertical-resizer" resize-target="#messages"></div>
+                <form style="margin-top: 15px" ng-show="logged">
+                    <div class="form-group">
+                        <textarea style="resize: vertical;" rows="3" class="form-control bordered" ng-model="newMessageBody" ng-enter="submitMessage()" placeholder="Write something..."></textarea>
+                    </div>
+                </form>
+                <form class="form-inline" ng-show="logged">
+                    <div class="form-group">
+                        <button class="btn btn-default btn-sm" ng-click="submitMessage()" ng-disabled="sendingMessage">{{ 'Send' | translate }}</button>
+                    </div>
+                    <div class="form-group">
+                        <button class="btn btn-default btn-sm" ng-click="clearMessages()" ng-disabled="clearingMessages">{{ 'Clear messages' | translate }}</button>
+                    </div>
+                </form>
+				<div class="hide-when-fullscreen">
+					<h2>{{ 'TO-DO' | translate }}</h2>
+					<ul>
+						<li>Support for MKV and AVI</li>
+						<li>Volume control</li>
+						<li>Autohide timeline</li>
+						<li>Chat replying?</li>
+						<li>Send voice messages?</li>
+						<li>Drawing?</li>
+						<li>Thumbnail preview on timeline</li>
+						<li>Fix vertical resize</li>
+						<li>Fix settings when fullscreen</li>
+						<li>Fix double subtitles bug</li>
+						<li>Make initial width of #left and #right ad-hoc to user's resolution</li>
+						<li>Better css for buttons when fullscreen</li>
+					</ul>
+				</div>
+            </div>
+			<div id="horizontal-resizer" 
+				resizer="vertical" 
+				resizer-width="6" 
+				resizer-left="#left" 
+				resizer-right="#right"
+				resizer-max="2000">
 			</div>
-		</div>
-		<div class="row">
-			<div class="col-md-12">
-				<h2 style="margin-top: 30px">{{ 'TO-DO' | translate }}</h2>
-				<ul>
-					<li>MKV</li>
-					<li>Make "is typing" easier to see</li>
-					<li>Volume control</li>
-					<li>Resize video and chat horizontally</li>
-					<li>Autohide timeline</li>
-					<li>Chat replying?</li>
-                    <li>Send voice messages?</li>
-                    <li>Drawing?</li>
-				</ul>
-			</div>
-		</div>
-
-        <hr />
-        <p style="text-align: center;">{{ 'Developed by' | translate }} <a href="http://www.manger.cl" targer="_blank">manger.cl</a></p>
-        
+        </div>
+       
         <toaster-container toaster-options="{'time-out': 3000, 'close-button': true, 'position-class': 'toast-bottom-right'}"></toaster-container>
     </div>
     

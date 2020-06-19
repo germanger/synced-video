@@ -129,6 +129,9 @@ router.get('/changeVideo', function(req, res, next) {
             username: res.user.username
         },
         data: {
+			videoFileName: req.query.videoFileName,
+			videoFileSize: req.query.videoFileSize,
+			videoDuration: req.query.videoDuration
         }
     };
     
