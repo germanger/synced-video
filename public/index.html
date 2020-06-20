@@ -832,7 +832,8 @@
 					}
 				} 
 				  
-				fileReader.readAsText(e.files[0], "ISO-8859-1");
+				//fileReader.readAsText(e.files[0], "ISO-8859-1");
+				fileReader.readAsText(e.files[0], "utf8");
 			};
 
             $scope.fetchPlayerInfo = function () {
