@@ -346,6 +346,7 @@
 			$scope.duration = 0;
             $scope.unreadMessagesCount = 0;
             $scope.subtitlesSettings = {
+				encoding: "iso-8859-1",
                 fontSize: "20px",
                 textColor: "white",
                 backgroundColor: "black"
@@ -810,7 +811,7 @@
 					
 					for (var i = 0; i < lines.length; i++) {
 					
-						console.log("Linea: " + lines[i]);
+						//console.log("Linea: " + lines[i]);
 						
 						var line = lines[i].split("\n");
 						
@@ -831,9 +832,8 @@
 						track.addCue(cues[i]);
 					}
 				} 
-				  
-				//fileReader.readAsText(e.files[0], "ISO-8859-1");
-				fileReader.readAsText(e.files[0], "utf8");
+				
+				fileReader.readAsText(e.files[0], $scope.subtitlesSettings.encoding);
 			};
 
             $scope.fetchPlayerInfo = function () {
@@ -1176,6 +1176,13 @@
                     <div class="form-group">
                         <label>Video</label>
                         <input type="file" class="form-control input-sm" accept="video/*" onchange="angular.element(this).scope().videoFileChanged(this)">
+                    </div>
+                    <div class="form-group">
+                        <label>Subtitles encoding</label>
+                        <select class="form-control input-sm" ng-model="subtitlesSettings.encoding">
+                            <option>iso-8859-1</option>
+                            <option>utf8</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label>Subtitles</label>
