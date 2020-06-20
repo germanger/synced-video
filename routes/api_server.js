@@ -13,4 +13,11 @@ router.get('/info', function(req, res, next) {
     });
 });
 
+router.get('/dontSleep', function(req, res, next) {
+
+    res.json({
+        error: false,
+    });
+});
+
 module.exports = router;

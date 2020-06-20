@@ -893,6 +893,23 @@
                     $scope.sendingPlayerState = false;
                 });
             };
+			
+			$scope.dontSleep = function() {
+		
+				var httpRequest = $http({
+					ignoreLoadingBar: true,
+					method: "get",
+					url: "/api/server/dontSleep",
+					params: {
+					},
+					data: {
+					}
+				});
+				
+				httpRequest.success(function(response) {
+					 
+				});
+			};
             
             $scope.submitCommand = function(state, time) {
 				var videoNode = document.querySelector('video');
@@ -969,6 +986,8 @@
             });
             
             $scope.connect();
+			
+			$interval($scope.dontSleep, 60000);
         }]);
     </script>
 </head>
